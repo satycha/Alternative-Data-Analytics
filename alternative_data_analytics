@@ -1,0 +1,159 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from textblob import TextBlob
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+
+# Load the datasets (assuming they are saved as CSVs or DataFrames already)
+# For example:
+# social_media_sentiment = pd.read_csv('starbucks_social_media_sentiment.csv')
+# web_traffic = pd.read_csv('starbucks_web_traffic.csv')
+# satellite_imagery = pd.read_csv('starbucks_satellite_imagery.csv')
+# transactional_data = pd.read_csv('starbucks_transactional_data.csv')
+# foot_traffic = pd.read_csv('starbucks_foot_traffic.csv')
+
+# For demonstration, we'll use the dataframes already loaded.
+
+# 1. Social Media Sentiment Analysis
+def analyze_sentiment(data):
+    # Calculate the average sentiment score per week
+    data['week'] = data['date'].dt.to_period('W')
+    weekly_sentiment = data.groupby('week')['sentiment_score'].mean().reset_index()
+    
+    # Plot sentiment trends
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(x='week', y='sentiment_score', data=weekly_sentiment, marker='o')
+    plt.title('Weekly Social Media Sentiment Score for Starbucks')
+    plt.xlabel('Week')
+    plt.ylabel('Average Sentiment Score')
+    plt.grid(True)
+    plt.show()
+    
+    return weekly_sentiment
+
+# Perform sentiment analysis
+weekly_sentiment = analyze_sentiment(social_media_sentiment)
+
+# 2. Web Traffic Analysis
+def analyze_web_traffic(data):
+    # Calculate weekly web traffic
+    data['week'] = data['date'].dt.to_period('W')
+    weekly_traffic = data.groupby('week')['website_visits'].mean().reset_index()
+    
+    # Plot web traffic trends
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(x='week', y='website_visits', data=weekly_traffic, marker='o', color='green')
+    plt.title('Weekly Web Traffic for Starbucks')
+    plt.xlabel('Week')
+    plt.ylabel('Average Website Visits')
+    plt.grid(True)
+    plt.show()
+    
+    return weekly_traffic
+
+# Perform web traffic analysis
+weekly_traffic = analyze_web_traffic(web_traffic)
+
+# 3. Satellite Imagery Analysis (Parking Lot Counts as Proxy for Store Activity)
+def analyze_parking_lot(data):
+    # Calculate weekly parking lot activity
+    data['week'] = data['date'].dt.to_period('W')
+    weekly_parking = data.groupby('week')['parking_lot_count'].mean().reset_index()
+    
+    # Plot parking lot activity trends
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(x='week', y='parking_lot_count', data=weekly_parking, marker='o', color='orange')
+    plt.title('Weekly Parking Lot Activity for Starbucks')
+    plt.xlabel('Week')
+    plt.ylabel('Average Parking Lot Count')
+    plt.grid(True)
+    plt.show()
+    
+    return weekly_parking
+
+# Perform parking lot analysis
+weekly_parking = analyze_parking_lot(satellite_imagery)
+
+# 4. Transactional Data Analysis (E-commerce and In-Store Sales)
+def analyze_sales(data):
+    # Calculate weekly sales (e-commerce and in-store)
+    data['week'] = data['date'].dt.to_period('W')
+    weekly_sales = data.groupby('week')[['ecommerce_sales', 'in_store_sales']].mean().reset_index()
+    
+    # Plot e-commerce and in-store sales trends
+    plt.figure(figsize=(12, 6))
+    plt.plot(weekly_sales['week'], weekly_sales['ecommerce_sales'], marker='o', label='E-commerce Sales', color='blue')
+    plt.plot(weekly_sales['week'], weekly_sales['in_store_sales'], marker='o', label='In-store Sales', color='red')
+    plt.title('Weekly Sales for Starbucks (E-commerce and In-store)')
+    plt.xlabel('Week')
+    plt.ylabel('Average Sales')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
+    return weekly_sales
+
+# Perform sales analysis
+weekly_sales = analyze_sales(transactional_data)
+
+# 5. Foot Traffic Analysis at Starbucks Locations
+def analyze_foot_traffic(data):
+    # Calculate weekly foot traffic by store
+    data['week'] = data['date'].dt.to_period('W')
+    weekly_foot_traffic = data.groupby(['week', 'store_id'])['foot_traffic_count'].mean().reset_index()
+    
+    # Plot foot traffic trends for each store
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(x='week', y='foot_traffic_count', hue='store_id', data=weekly_foot_traffic, marker='o')
+    plt.title('Weekly Foot Traffic at Starbucks Locations')
+    plt.xlabel('Week')
+    plt.ylabel('Average Foot Traffic Count')
+    plt.grid(True)
+    plt.show()
+    
+    return weekly_foot_traffic
+
+# Perform foot traffic analysis
+weekly_foot_traffic = analyze_foot_traffic(foot_traffic)
+
+# 6. Correlating Data and Building a Predictive Model
+def build_predictive_model(traffic_data, sentiment_data, sales_data):
+    # Merge the datasets on the week column
+    merged_data = traffic_data.merge(sentiment_data, on='week').merge(sales_data, on='week')
+    
+    # Prepare features and target variable
+    X = merged_data[['website_visits', 'sentiment_score', 'parking_lot_count']]
+    y = merged_data['in_store_sales']
+    
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    # Train a linear regression model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    
+    # Make predictions
+    y_pred = model.predict(X_test)
+    
+    # Evaluate the model
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    
+    print(f"Mean Squared Error: {mse:.2f}")
+    print(f"R-squared: {r2:.2f}")
+    
+    # Visualize the actual vs predicted values
+    plt.figure(figsize=(10, 6))
+    plt.scatter(y_test, y_pred, alpha=0.7)
+    plt.xlabel('Actual In-store Sales')
+    plt.ylabel('Predicted In-store Sales')
+    plt.title('Actual vs Predicted In-store Sales')
+    plt.grid(True)
+    plt.show()
+
+# Build and evaluate the predictive model
+build_predictive_model(weekly_traffic, weekly_sentiment, weekly_sales)
